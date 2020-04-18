@@ -1,6 +1,3 @@
-(defproject traktor-keys "0.1.0-SNAPSHOT"
-  :description ""
-  :url ""
-  :license {:name "Eclipse Public License"
-            :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.5.1"] [claudio "0.1.3"]])
+(defproject traktor-keys "unreleased"
+  :dependencies [[claudio "0.1.3"]
+                 [org.clojure/clojure "1.10.1"]])
