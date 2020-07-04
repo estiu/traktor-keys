@@ -2,9 +2,13 @@
   "Converts Traktor notation to traditional notation, as used by Rekordbox and Ableton."
   (:require
    [claudio.id3 :as id3]
-   [clojure.java.io])
+   [clojure.java.io]
+   [nedap.speced.def :as speced])
   (:import
-   (java.io File)))
+   (java.io File)
+   (java.util.logging Level Logger)
+   (org.jaudiotagger.audio AudioFileIO)
+   (org.jaudiotagger.audio.mp3 MP3File)))
 
 (def equivs
   {"1m"  "Am"
@@ -32,21 +36,39 @@
    "11d" "Bb"
    "12d" "F"})
 
+(defn set-logging! []
+  (-> "org.jaudiotagger"
+      Logger/getLogger
+      (.setLevel Level/OFF)))
+
+(defn mp3-seq []
+  (->> "/Users/vemv/Dropbox/Tracks"
+       clojure.java.io/file
+       file-seq
+       (filter (speced/fn [^File file]
+                 (-> file
+                     .getName
+                     (.endsWith "mp3"))))))
+
 (defn convert! []
 
-  (-> "org.jaudiotagger"
-      java.util.logging.Logger/getLogger
-      (.setLevel java.util.logging.Level/OFF))
+  (set-logging!)
 
-  (doseq [mp3 (->> "/Users/vemv/Dropbox/Tracks"
-                   clojure.java.io/file
-                   file-seq
-                   (filter (fn [^File file]
-                             (-> file
-                                 .getName
-                                 (.endsWith "mp3")))))
+  (doseq [^File mp3 (mp3-seq)
           :let [{k :key :as tag} (id3/read-tag mp3)]
           :when (->> equivs
                      keys
                      (some #{k}))]
     (id3/write-tag! mp3 :key (equivs k))))
+
+(defn report-subpar-files! []
+
+  (set-logging!)
+
+  (->> (for [^File mp3 (mp3-seq)
+             :let [tag (id3/read-tag mp3)
+                   bitrate (-> mp3 ^MP3File (AudioFileIO/read) .getMP3AudioHeader .getBitRate)]
+             :when (not= bitrate "320")]
+         [bitrate tag])
+       (sort-by first)
+       (run! println)))
